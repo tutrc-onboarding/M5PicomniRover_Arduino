@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cmath>
 #include <cstring>
 
@@ -68,7 +67,7 @@ bool FeetechServo::controlMode(uint8_t value) { return writeData(0x21, &value, s
 bool FeetechServo::enableTorque(uint8_t value) { return writeData(0x28, &value, sizeof(value)); }
 
 bool FeetechServo::setPosition(int16_t value) {
-  value = std::clamp<int16_t>(value, -32766, 32766);
+  value = constrain(value, -32766, 32766);
   if (value < 0) {
     value = std::abs(value) | 0x8000;
   }
@@ -78,7 +77,7 @@ bool FeetechServo::setPosition(int16_t value) {
 }
 
 bool FeetechServo::setVelocity(int16_t value) {
-  value = std::clamp<int16_t>(value, -32766, 32766);
+  value = constrain(value, -32766, 32766);
   if (value < 0) {
     value = std::abs(value) | 0x8000;
   }

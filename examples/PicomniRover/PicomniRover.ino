@@ -1,6 +1,4 @@
-#include <Adafruit_BNO055.h>
-#include <FeetechServo.h>
-#include <WirelessControl.h>
+#include <M5StampRover.h>
 
 #define ROBOT_RADIUS 0.083f
 #define WHEEL_RADIUS 0.024f
@@ -15,7 +13,6 @@ FeetechBus feetech_bus;
 FeetechServo motor1(1, &feetech_bus);
 FeetechServo motor2(2, &feetech_bus);
 FeetechServo motor3(3, &feetech_bus);
-Adafruit_BNO055 bno;
 
 void inverseKinematics() {
   // BLE受信
@@ -48,17 +45,14 @@ void forwardKinematics() {
   float delta_s = delta_us / 1000000.0f;
   prev_us = now_us;
 
-  // モーター速度受信
   static int16_t v1_steps = 0;
   static int16_t v2_steps = 0;
   static int16_t v3_steps = 0;
+
+  // モーター速度受信
   motor1.getVelocity(&v1_steps);
   motor2.getVelocity(&v2_steps);
   motor3.getVelocity(&v3_steps);
-
-  // IMUからyaw角を受信
-  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  float yaw = -radians(euler.x()) + 2.0f * PI;
 
   // rps -> m/s
   float v1 = STEPS_TO_RPS(v1_steps) * 2.0f * PI * WHEEL_RADIUS;
@@ -68,18 +62,20 @@ void forwardKinematics() {
   // 順運動学の式
   float vx = (-2.0f * v1 + v2 + v3) / 3.0f;
   float vy = (-v2 + v3) * sqrt(3.0f) / 3.0f;
-  // w は使わない (IMUの値を使うため)
   float w = (v1 + v2 + v3) / (3.0f * ROBOT_RADIUS);
+
+  static float yaw = 0.0f;
+  static float x = 0.0f;
+  static float y = 0.0f;
 
   // ロボット座標系->ワールド座標系
   float vx_w = vx * cos(yaw) - vy * sin(yaw);
   float vy_w = vx * sin(yaw) + vy * cos(yaw);
 
   // ベクトルの積分
-  static float x = 0.0f;
-  static float y = 0.0f;
   x += vx_w * delta_s;
   y += vy_w * delta_s;
+  yaw += w * delta_s;
 
   // BLE送信
   Odometry odom;
@@ -91,7 +87,6 @@ void forwardKinematics() {
 
 void setup() {
   WirelessControl::begin();
-  Serial.begin(115200);
   feetech_bus.begin();
 
   // モーターの起動を待つ
@@ -106,10 +101,6 @@ void setup() {
   motor1.controlMode(1);
   motor2.controlMode(1);
   motor3.controlMode(1);
-
-  Wire.setSDA(16);
-  Wire.setSCL(17);
-  bno.begin(OPERATION_MODE_IMUPLUS);
 }
 
 void loop() {
