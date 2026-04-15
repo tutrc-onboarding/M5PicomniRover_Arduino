@@ -1,4 +1,4 @@
-# M5StampRover Arduinoライブラリ
+# M5PicomniRover Arduinoライブラリ
 
 ## これは何？
 
