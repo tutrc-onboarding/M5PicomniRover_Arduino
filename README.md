@@ -1,18 +1,14 @@
-# PicomniRover Arduinoライブラリ
+# M5StampRover Arduinoライブラリ
 
 ## これは何？
 
-本リポジトリは、コミックマーケット107にて頒布した「やる気出ないんズ 活動報告書 vol.1」内の「かんたん！全方位移動ロボットのつくりかた」にて製作する全方位移動ロボット「PicomniRover」に必要な Arduinoライブラリです。
+あとでかく
 
 ## 必要なライブラリ
 
-- Arduino-Pico (v5.4.3 で確認済)
-  - https://github.com/earlephilhower/arduino-pico
-- Adafruit BNO055 (v1.6.4 で確認済)
-  - https://github.com/adafruit/Adafruit_BNO055
+- M5Stack Board Package (v3.3.7 で確認済)
+  - https://static-cdn.m5stack.com/resource/arduino/package_m5stack_index.json
 
 ## ライセンス
 
 MIT ライセンス
-
-本ライブラリは、BlueKitchen GmbH 提供の BTstack を使用しています。著作権表示とライセンスの詳細は [NOTICE](NOTICE) を参照してください。
