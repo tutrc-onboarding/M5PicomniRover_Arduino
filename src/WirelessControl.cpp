@@ -7,10 +7,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
-#include <BLE2902.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
+#include <NimBLEDevice.h>
 
 static constexpr unsigned long CMD_TIMEOUT_MS = 1000;
 
@@ -24,18 +21,14 @@ static unsigned long cmd_last_update_ms;
 
 static uint8_t odom_buf[sizeof(Odometry)];
 
-class WirelessControlServerCallbacks : public BLEServerCallbacks {
-  void onDisconnect(BLEServer *server) override { server->startAdvertising(); }
-};
-
 class WirelessControlCharacteristicCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic *characteristic) override {
-    String value = characteristic->getValue();
-    if (value.length() != sizeof(Command)) {
+  void onWrite(BLECharacteristic *characteristic, BLEConnInfo &) override {
+    NimBLEAttValue value = characteristic->getValue();
+    if (value.size() != sizeof(Command)) {
       return;
     }
 
-    xQueueOverwrite(cmd_queue, value.c_str());
+    xQueueOverwrite(cmd_queue, value.data());
     cmd_last_update_ms = millis();
 
     Odometry odom;
@@ -55,21 +48,18 @@ void WirelessControl::begin() {
   BLEDevice::init(DEVICE_NAME);
 
   BLEServer *server = BLEDevice::createServer();
-  server->setCallbacks(new WirelessControlServerCallbacks());
+  server->advertiseOnDisconnect(true);
 
   BLEService *service = server->createService(SERVICE_UUID);
-  BLECharacteristic *characteristic = service->createCharacteristic(
-      CHARACTERISTIC_UUID, BLECharacteristic::PROPERTY_WRITE_NR | BLECharacteristic::PROPERTY_NOTIFY);
-  characteristic->addDescriptor(new BLE2902());
+  BLECharacteristic *characteristic =
+      service->createCharacteristic(CHARACTERISTIC_UUID, NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::NOTIFY);
   characteristic->setCallbacks(new WirelessControlCharacteristicCallbacks());
 
   service->start();
 
   BLEAdvertising *advertising = BLEDevice::getAdvertising();
   advertising->addServiceUUID(SERVICE_UUID);
-  advertising->setScanResponse(true);
-  advertising->setMinPreferred(0x06);
-  advertising->setMaxPreferred(0x12);
+  advertising->enableScanResponse(true);
   BLEDevice::startAdvertising();
 }
 
