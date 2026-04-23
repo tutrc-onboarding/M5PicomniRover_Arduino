@@ -4,9 +4,9 @@
 
 #define ROBOT_RADIUS 0.083f
 #define WHEEL_RADIUS 0.024f
-#define WHEEL_THETA_1 (PI / 2.0f + PI)
-#define WHEEL_THETA_2 (PI * 7.0f / 6.0f + PI)
-#define WHEEL_THETA_3 (PI * 11.0f / 6.0f + PI)
+#define WHEEL_THETA_1 (PI / 2.0f)
+#define WHEEL_THETA_2 (PI * 7.0f / 6.0f)
+#define WHEEL_THETA_3 (PI * 11.0f / 6.0f)
 
 struct WheelVel {
     float v1;
