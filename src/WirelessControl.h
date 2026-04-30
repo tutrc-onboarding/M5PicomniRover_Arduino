@@ -4,6 +4,8 @@ struct Command {
   float vx;
   float vy;
   float w;
+  bool a;
+  bool b;
 };
 
 struct Odometry {

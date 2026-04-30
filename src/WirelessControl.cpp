@@ -13,7 +13,8 @@ static constexpr unsigned long CMD_TIMEOUT_MS = 1000;
 
 static constexpr char DEVICE_NAME[] = "Picomni";
 static constexpr char SERVICE_UUID[] = "69321c59-8017-488e-b5e2-b6d30c834bc5";
-static constexpr char CHARACTERISTIC_UUID[] = "87bc2dc5-2207-408d-99f6-3d35573c4472";
+static constexpr char CHARACTERISTIC_UUID[] =
+    "87bc2dc5-2207-408d-99f6-3d35573c4472";
 
 static QueueHandle_t cmd_queue;
 static QueueHandle_t odom_queue;
@@ -21,14 +22,25 @@ static unsigned long cmd_last_update_ms;
 
 static uint8_t odom_buf[sizeof(Odometry)];
 
-class WirelessControlCharacteristicCallbacks : public BLECharacteristicCallbacks {
+class WirelessControlCharacteristicCallbacks
+    : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *characteristic, BLEConnInfo &) override {
     NimBLEAttValue value = characteristic->getValue();
-    if (value.size() != sizeof(Command)) {
+    if (value.size() != 12 && value.size() != 13) {
       return;
     }
 
-    xQueueOverwrite(cmd_queue, value.data());
+    Command cmd{};
+    std::memcpy(&cmd.vx, value.data(), 4);
+    std::memcpy(&cmd.vy, value.data() + 4, 4);
+    std::memcpy(&cmd.w, value.data() + 8, 4);
+    if (value.size() == 13) {
+      uint8_t buttons = value[12];
+      cmd.a = (buttons & 0x01) != 0;
+      cmd.b = (buttons & 0x02) != 0;
+    }
+
+    xQueueOverwrite(cmd_queue, &cmd);
     cmd_last_update_ms = millis();
 
     Odometry odom;
@@ -51,8 +63,8 @@ void WirelessControl::begin() {
   server->advertiseOnDisconnect(true);
 
   BLEService *service = server->createService(SERVICE_UUID);
-  BLECharacteristic *characteristic =
-      service->createCharacteristic(CHARACTERISTIC_UUID, NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::NOTIFY);
+  BLECharacteristic *characteristic = service->createCharacteristic(
+      CHARACTERISTIC_UUID, NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::NOTIFY);
   characteristic->setCallbacks(new WirelessControlCharacteristicCallbacks());
 
   service->start();
@@ -64,7 +76,8 @@ void WirelessControl::begin() {
 }
 
 Command WirelessControl::getCommand() {
-  if (static_cast<unsigned long>(millis() - cmd_last_update_ms) >= CMD_TIMEOUT_MS) {
+  if (static_cast<unsigned long>(millis() - cmd_last_update_ms) >=
+      CMD_TIMEOUT_MS) {
     return {};
   }
   Command cmd;
@@ -74,4 +87,6 @@ Command WirelessControl::getCommand() {
   return cmd;
 }
 
-void WirelessControl::setOdometry(Odometry odom) { xQueueOverwrite(odom_queue, &odom); }
+void WirelessControl::setOdometry(Odometry odom) {
+  xQueueOverwrite(odom_queue, &odom);
+}
