@@ -15,7 +15,7 @@ public:
     servo_.controlMode(1);
   }
 
-  void setRPS(float rps) { servo_.setVelocity(RPS_TO_STEPS(rps)); }
+  void setRPS(float rps) { servo_.setVelocity(constrain(RPS_TO_STEPS(rps), -32766, 32766)); }
 
   float getRPS() {
     static int16_t steps = 0;
